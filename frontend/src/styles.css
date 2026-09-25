@@ -88,6 +88,42 @@ body {
   margin-top: 16px;
 }
 
+.report-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.report-field {
+  display: grid;
+  gap: 6px;
+}
+
+.report-type {
+  width: 200px;
+}
+
+.report-result {
+  margin-top: 12px;
+}
+
+.ops-item {
+  background: #fbfdfc;
+}
+
+.ops-stem {
+  margin: 10px 0 4px;
+}
+
+.ops-note {
+  margin: 0 0 10px;
+  color: #5f6f68;
+}
+
+.ops-actions {
+  width: 100%;
+}
+
 .category-row + .category-row {
   margin-top: 12px;
 }

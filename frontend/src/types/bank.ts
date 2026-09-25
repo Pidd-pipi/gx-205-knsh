@@ -47,3 +47,27 @@ export interface Dashboard {
   rankings: Ranking[];
   radar: { axis: string; value: number }[];
 }
+
+export type ReportStatus = 'pending' | 'fixed' | 'nochange';
+
+export interface QuestionReport {
+  id: number;
+  question_id: number;
+  question_stem: string;
+  issue_type: string;
+  issue_type_label: string;
+  note: string;
+  status: ReportStatus;
+  status_label: string;
+  resolution_note: string;
+  username: string;
+  created_at: string;
+  resolved_at: string | null;
+}
+
+export interface LoginResult {
+  access: string;
+  refresh: string;
+  username: string;
+  is_staff: boolean;
+}

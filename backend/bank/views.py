@@ -1,9 +1,19 @@
 from django.contrib.auth import get_user_model
-from rest_framework.decorators import api_view
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from bank.serializers import GeneratePaperSerializer, SubmitExamSerializer
+from bank.models import QuestionReport
+from bank.serializers import (
+    GeneratePaperSerializer,
+    QuestionReportCreateSerializer,
+    QuestionReportResolveSerializer,
+    QuestionReportSerializer,
+    SubmitExamSerializer,
+)
 
 
 QUESTIONS = [
@@ -120,4 +130,94 @@ def demo_login(_request):
     user.set_password("demo1234")
     user.save(update_fields=["password"])
     refresh = RefreshToken.for_user(user)
-    return Response({"access": str(refresh.access_token), "refresh": str(refresh)})
+    return Response(
+        {
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "username": user.username,
+            "is_staff": user.is_staff,
+        }
+    )
+
+
+@api_view(["POST"])
+def ops_login(_request):
+    User = get_user_model()
+    user, _ = User.objects.get_or_create(
+        username="ops", defaults={"email": "ops@example.com", "is_staff": True}
+    )
+    if not user.is_staff:
+        user.is_staff = True
+    user.set_password("ops1234")
+    user.save()
+    refresh = RefreshToken.for_user(user)
+    return Response(
+        {
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "username": user.username,
+            "is_staff": user.is_staff,
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def create_report(request):
+    serializer = QuestionReportCreateSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
+
+    existing = QuestionReport.objects.filter(
+        user=request.user, question_id=data["question_id"], status="pending"
+    ).first()
+    if existing:
+        return Response(
+            {
+                "report": QuestionReportSerializer(existing).data,
+                "duplicated": True,
+                "message": "该题已有处理中的报错，已返回原编号",
+            }
+        )
+
+    stem = next((q["stem"] for q in QUESTIONS if q["id"] == data["question_id"]), "")
+    report = QuestionReport.objects.create(
+        user=request.user,
+        question_id=data["question_id"],
+        question_stem=stem[:200],
+        issue_type=data["issue_type"],
+        note=data.get("note", ""),
+    )
+    return Response(
+        {"report": QuestionReportSerializer(report).data, "duplicated": False}, status=201
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_reports(request):
+    reports = QuestionReport.objects.filter(user=request.user)
+    return Response({"reports": QuestionReportSerializer(reports, many=True).data})
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def pending_reports(request):
+    reports = QuestionReport.objects.filter(status="pending").select_related("user")
+    return Response({"reports": QuestionReportSerializer(reports, many=True).data})
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def resolve_report(request, report_id):
+    serializer = QuestionReportResolveSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    report = get_object_or_404(QuestionReport, pk=report_id)
+    if report.status != "pending":
+        return Response({"detail": "该报错已处理"}, status=400)
+
+    report.status = serializer.validated_data["result"]
+    report.resolution_note = serializer.validated_data["note"]
+    report.resolved_at = timezone.now()
+    report.save(update_fields=["status", "resolution_note", "resolved_at"])
+    return Response({"report": QuestionReportSerializer(report).data})

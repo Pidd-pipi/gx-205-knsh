@@ -33,3 +33,33 @@ class WrongBookEntry(models.Model):
 
     class Meta:
         unique_together = ("user", "question")
+
+
+class QuestionReport(models.Model):
+    ISSUE_TYPES = [
+        ("stem", "题干有误"),
+        ("answer", "答案有误"),
+        ("explanation", "解析有误"),
+        ("other", "其他问题"),
+    ]
+    STATUS_CHOICES = [
+        ("pending", "处理中"),
+        ("fixed", "已修正"),
+        ("nochange", "无需修改"),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="question_reports")
+    question_id = models.PositiveIntegerField()
+    question_stem = models.CharField(max_length=200, blank=True)
+    issue_type = models.CharField(max_length=16, choices=ISSUE_TYPES)
+    note = models.TextField(blank=True)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="pending")
+    resolution_note = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"报错#{self.pk} 题目{self.question_id}"
