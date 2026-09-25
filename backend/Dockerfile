@@ -10,4 +10,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 EXPOSE 19505
-CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:19505"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py ensure_ops_user && gunicorn config.wsgi:application --bind 0.0.0.0:19505"]

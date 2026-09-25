@@ -1,19 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Card, Col, ConfigProvider, Form, Layout, Progress, Radio, Row, Select, Space, Statistic, Table, Tag, Typography } from 'antd';
-import { BookOutlined, ClockCircleOutlined, CrownOutlined, ExperimentOutlined, ReloadOutlined } from '@ant-design/icons';
+import { AuditOutlined, BookOutlined, ClockCircleOutlined, CrownOutlined, ExperimentOutlined, LogoutOutlined, ReloadOutlined } from '@ant-design/icons';
 import { api } from '@/api/client';
 import { AbilityRadar } from '@/components/AbilityRadar';
+import { OpsPanel } from '@/components/OpsPanel';
+import { ReportEntry } from '@/components/ReportEntry';
 import { useBankStore } from '@/store/useBankStore';
 
 const { Content } = Layout;
 const { Title, Paragraph, Text } = Typography;
 
 function App() {
-  const { dashboard, loading, error, loadDashboard, demoLogin } = useBankStore();
+  const { dashboard, loading, error, token, loadDashboard, demoLogin, logout, replacePaper } = useBankStore();
   const [difficulty, setDifficulty] = useState('中级');
   const [amount, setAmount] = useState(10);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [report, setReport] = useState<string[]>([]);
+  const [opsOpen, setOpsOpen] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     loadDashboard();
@@ -24,6 +28,20 @@ function App() {
   async function submitExam() {
     const result = await api.submitExam(answers);
     setReport([`得分 ${result.score}`, result.rank_hint, ...result.analysis]);
+  }
+
+  async function generateNewPaper() {
+    setGenerating(true);
+    try {
+      const result = await api.generatePaper(difficulty, amount, token || null);
+      replacePaper(result.paper);
+      setAnswers({});
+      setReport([]);
+    } catch (requestError) {
+      window.alert(requestError instanceof Error ? requestError.message : '组卷失败');
+    } finally {
+      setGenerating(false);
+    }
   }
 
   return (
@@ -38,7 +56,12 @@ function App() {
             </div>
             <Space wrap>
               <Button icon={<ReloadOutlined />} loading={loading} onClick={loadDashboard}>刷新</Button>
-              <Button type="primary" icon={<CrownOutlined />} onClick={demoLogin}>演示登录</Button>
+              {token ? (
+                <Button icon={<LogoutOutlined />} onClick={logout}>退出演示账号</Button>
+              ) : (
+                <Button type="primary" icon={<CrownOutlined />} onClick={demoLogin}>演示登录</Button>
+              )}
+              <Button ghost icon={<AuditOutlined />} onClick={() => setOpsOpen(true)}>运营处理台</Button>
             </Space>
           </section>
 
@@ -63,12 +86,12 @@ function App() {
                       <Form.Item label="题量">
                         <Select value={amount} onChange={setAmount} options={[10, 20, 30, 50].map((value) => ({ value, label: `${value} 题` }))} />
                       </Form.Item>
-                      <Button icon={<ExperimentOutlined />} onClick={() => api.generatePaper(difficulty, amount)}>生成试卷</Button>
+                      <Button type="primary" icon={<ExperimentOutlined />} loading={generating} onClick={generateNewPaper}>生成试卷</Button>
                     </Form>
 
                     <Space direction="vertical" size={16} className="question-list">
                       {paper.map((question, index) => (
-                        <Card key={question.id} size="small" className="question-card">
+                        <Card key={`${question.id}-${index}`} size="small" className="question-card">
                           <Space wrap className="question-meta">
                             <Tag>{question.type}</Tag>
                             <Tag color="blue">{question.difficulty}</Tag>
@@ -81,6 +104,7 @@ function App() {
                             </Space>
                           </Radio.Group>
                           <Paragraph className="explain">解析：{question.explanation}</Paragraph>
+                          <ReportEntry question={question} />
                         </Card>
                       ))}
                     </Space>
@@ -143,6 +167,8 @@ function App() {
           )}
         </Content>
       </Layout>
+
+      <OpsPanel open={opsOpen} onClose={() => setOpsOpen(false)} />
     </ConfigProvider>
   );
 }

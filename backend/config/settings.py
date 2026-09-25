@@ -35,7 +35,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
+        "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.postgresql"),
         "NAME": os.getenv("DB_NAME", "gxlogic_bank"),
         "USER": os.getenv("DB_USER", "gxlogic"),
         "PASSWORD": os.getenv("DB_PASSWORD", "gxlogic_pwd"),

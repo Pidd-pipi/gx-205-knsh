@@ -84,6 +84,49 @@ body {
   margin-top: 16px;
 }
 
+/* 题目报错入口 */
+.report-entry {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #d7e2dc;
+}
+
+.report-alert {
+  flex: 1;
+  min-width: 0;
+}
+
+.report-sub {
+  font-size: 12px;
+}
+
+.report-stem {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #5f6f68;
+  background: #f4f8f6;
+  border-radius: 6px;
+}
+
+/* 运营处理台 */
+.ops-login,
+.ops-body {
+  width: 100%;
+}
+
+.ops-detail {
+  margin: 0;
+}
+
+.ops-review-form {
+  margin-top: 16px;
+}
+
 .stacked {
   margin-top: 16px;
 }

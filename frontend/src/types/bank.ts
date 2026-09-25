@@ -5,6 +5,28 @@ export interface Category {
   total: number;
 }
 
+export type IssueType = 'stem' | 'answer' | 'explanation' | 'other';
+export type ReportStatusValue = 'pending' | 'resolved' | 'rejected';
+
+export interface QuestionReportStatus {
+  code: string;
+  issueType: IssueType;
+  issueTypeLabel: string;
+  status: ReportStatusValue;
+  statusLabel: string;
+  handlingNote: string;
+  createdAt: string;
+  handledAt: string | null;
+}
+
+export interface AdminQuestionReport extends QuestionReportStatus {
+  id: number;
+  questionId: number;
+  detail: string;
+  reporter: string;
+  handledBy: string | null;
+}
+
 export interface Question {
   id: number;
   type: string;
@@ -14,6 +36,7 @@ export interface Question {
   answer: string;
   explanation: string;
   knowledge: string;
+  reportStatus: QuestionReportStatus | null;
 }
 
 export interface Ranking {
